@@ -1,0 +1,39 @@
+[project]
+name = "news-post-popularity-prediction"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "George Lavrenov",email = "lavrenovg471@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pandas (==2.2.3)",
+    "numpy (>=2.4.4,<3.0.0)",
+    "scikit-learn (>=1.8.0,<2.0.0)",
+    "catboost (>=1.2.10,<2.0.0)",
+    "torch (>=2.11.0,<3.0.0)",
+    "mlflow (>=3.11.1,<4.0.0)",
+    "click (>=8.3.2,<9.0.0)",
+    "dvc[gdrive] (>=3.67.1,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.3,<10.0.0)",
+    "black (>=26.3.1,<27.0.0)",
+    "flake8 (>=7.3.0,<8.0.0)"
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
