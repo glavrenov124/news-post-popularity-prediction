@@ -1,23 +1,9 @@
-from pathlib import Path
-import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from datetime import datetime
 import hashlib
-import os 
-import pandas as pd
+import os
+
 import requests
 import streamlit as st
-
-from recommendations import (
-    generate_recommendations,
-    get_thresholds_for_domain,
-    load_feature_thresholds_by_domain,
-)
-from src.ml.features.build_features import make_features
 
 
 st.set_page_config(page_title="News Post Popularity", layout="centered")
@@ -25,7 +11,6 @@ st.set_page_config(page_title="News Post Popularity", layout="centered")
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "http://127.0.0.1:8000"
 MIN_TEXT_LENGTH = 20
-PREPARED_FEATURES_PATH = PROJECT_ROOT / "artifacts" / "data" / "prepared_features.csv"
 
 DOMAINS = [
     "ndnews24",
@@ -34,31 +19,6 @@ DOMAINS = [
     "lentach",
     "unknown",
 ]
-
-
-@st.cache_resource
-def get_thresholds_store() -> dict:
-    return load_feature_thresholds_by_domain(str(PREPARED_FEATURES_PATH))
-
-
-def build_single_row_dataframe(
-    text: str,
-    domain: str,
-    dt_msk: str,
-    n_photos: int,
-) -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {
-                "text": text,
-                "domain": domain,
-                "dt_msk": dt_msk,
-                "n_photos": n_photos,
-                "is_pinned": 0,
-                "row_id": 0,
-            }
-        ]
-    )
 
 
 def build_dt_msk(use_now: bool, selected_date, selected_time) -> str:
@@ -101,6 +61,28 @@ def call_clip_score(text: str, image_file) -> dict:
     return response.json()
 
 
+def call_recommendations(
+    text: str,
+    domain: str,
+    dt_msk: str,
+    n_photos: int,
+) -> list[str]:
+    payload = {
+        "text": text,
+        "domain": domain,
+        "dt_msk": dt_msk,
+        "n_photos": n_photos,
+    }
+
+    response = requests.post(
+        f"{API_BASE_URL}/recommend/text",
+        json=payload,
+        timeout=120,
+    )
+    response.raise_for_status()
+    return response.json()["recommendations"]
+
+
 def call_text_improvement(
     text: str,
     domain: str,
@@ -128,11 +110,23 @@ def make_file_id(uploaded_file) -> str:
 
 
 def init_session_state() -> None:
-    if "uploaded_images" not in st.session_state:
-        st.session_state.uploaded_images = {}
+    defaults = {
+        "uploaded_images": {},
+        "uploader_key": 0,
+        "last_form_signature": None,
+        "last_payload": None,
+        "has_prediction": False,
+        "views_pred": None,
+        "er_pred": None,
+        "clip_result": None,
+        "recommendations": None,
+        "improved_text": None,
+        "improvement_message": None,
+    }
 
-    if "uploader_key" not in st.session_state:
-        st.session_state.uploader_key = 0
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
 
 def sync_uploaded_files(uploaded_files) -> None:
@@ -210,37 +204,64 @@ def render_clip_message(clip_result: dict) -> None:
         st.success(clip_result["message"])
 
 
-def get_recommendations(
-    text: str,
-    domain: str,
-    dt_msk: str,
-    n_photos: int,
-) -> list[str]:
-    thresholds_store = get_thresholds_store()
-
-    single_df = build_single_row_dataframe(
-        text=text,
-        domain=domain,
-        dt_msk=dt_msk,
-        n_photos=n_photos,
-    )
-    single_df = make_features(single_df)
-
-    features_row = single_df.iloc[0].to_dict()
-    domain_thresholds = get_thresholds_for_domain(thresholds_store, domain)
-
-    recommendations = generate_recommendations(
-        features_row=features_row,
-        thresholds=domain_thresholds,
-    )
-
-    return recommendations
-
-
 def render_recommendations(recommendations: list[str]) -> None:
     st.subheader("Что можно улучшить")
     for rec in recommendations:
         st.write(f"- {rec}")
+
+
+def build_form_signature(
+    text: str,
+    domain: str,
+    use_now: bool,
+    selected_date,
+    selected_time,
+    n_photos: int,
+    image_ids: list[str],
+) -> str:
+    parts = [
+        text.strip(),
+        domain,
+        str(use_now),
+        str(n_photos),
+        "|".join(sorted(image_ids)),
+    ]
+
+    if not use_now:
+        parts.append(str(selected_date))
+        parts.append(str(selected_time))
+
+    raw = "||".join(parts)
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+
+def reset_results() -> None:
+    st.session_state.last_payload = None
+    st.session_state.has_prediction = False
+    st.session_state.views_pred = None
+    st.session_state.er_pred = None
+    st.session_state.clip_result = None
+    st.session_state.recommendations = None
+    st.session_state.improved_text = None
+    st.session_state.improvement_message = None
+
+
+def handle_request_error(e: Exception) -> None:
+    if isinstance(e, requests.exceptions.ConnectionError):
+        st.error("Сервис временно недоступен. Попробуйте позже.")
+    elif isinstance(e, requests.exceptions.Timeout):
+        st.error("Сервис отвечает слишком долго. Попробуйте ещё раз.")
+    elif isinstance(e, requests.exceptions.HTTPError):
+        try:
+            error_detail = e.response.json().get(
+                "detail",
+                "Ошибка при обработке запроса.",
+            )
+        except Exception:
+            error_detail = "Ошибка при обработке запроса."
+        st.error(error_detail)
+    else:
+        st.error(f"Произошла непредвиденная ошибка: {e}")
 
 
 def main():
@@ -302,7 +323,30 @@ def main():
             disabled=use_now,
         )
 
-    if st.button("Предсказать", type="primary", use_container_width=True):
+    image_ids = list(st.session_state.uploaded_images.keys())
+
+    current_form_signature = build_form_signature(
+        text=text,
+        domain=domain,
+        use_now=use_now,
+        selected_date=selected_date,
+        selected_time=selected_time,
+        n_photos=n_photos,
+        image_ids=image_ids,
+    )
+
+    if st.session_state.last_form_signature != current_form_signature:
+        if st.session_state.last_form_signature is not None:
+            reset_results()
+        st.session_state.last_form_signature = current_form_signature
+
+    predict_clicked = st.button(
+        "Предсказать",
+        type="primary",
+        use_container_width=True,
+    )
+
+    if predict_clicked:
         if not text.strip():
             st.error("Нужно ввести текст поста.")
             return
@@ -332,59 +376,100 @@ def main():
                     first_image = images[0]["file"]
                     clip_result = call_clip_score(text, first_image)
 
-                recommendations = get_recommendations(
-                    text=text,
-                    domain=domain,
-                    dt_msk=dt_msk,
-                    n_photos=n_photos,
-                )
+            st.session_state.last_payload = payload
+            st.session_state.has_prediction = True
+            st.session_state.views_pred = views_pred
+            st.session_state.er_pred = er_pred
+            st.session_state.clip_result = clip_result
+            st.session_state.recommendations = None
+            st.session_state.improved_text = None
+            st.session_state.improvement_message = None
 
-                improved_result = call_text_improvement(
-                    text=text,
-                    domain=domain,
-                    recommendations=recommendations,
-                )
+        except Exception as e:
+            handle_request_error(e)
 
-            st.subheader("Результат прогноза")
+    if st.session_state.has_prediction:
+        st.subheader("Результат прогноза")
 
-            result_col1, result_col2 = st.columns(2)
+        result_col1, result_col2 = st.columns(2)
 
-            with result_col1:
-                st.metric(
-                    "Прогноз просмотров",
-                    f"{views_pred:,.0f}".replace(",", " "),
-                )
-
-            with result_col2:
-                st.metric(
-                    "Прогноз engagement rate",
-                    f"{er_pred:.2f}%",
-                )
-
-            if clip_result is not None:
-                render_clip_message(clip_result)
-
-            render_recommendations(recommendations)
-
-            st.subheader("Улучшенный текст")
-            st.text_area(
-                "Версия после редактирования",
-                value=improved_result["improved_text"],
-                height=250,
+        with result_col1:
+            st.metric(
+                "Прогноз просмотров",
+                f"{st.session_state.views_pred:,.0f}".replace(",", " "),
             )
 
-        except requests.exceptions.ConnectionError:
-            st.error("Сервис временно недоступен. Попробуйте позже.")
-        except requests.exceptions.Timeout:
-            st.error("Сервис отвечает слишком долго. Попробуйте ещё раз.")
-        except requests.exceptions.HTTPError as e:
+        with result_col2:
+            st.metric(
+                "Прогноз engagement rate",
+                f"{st.session_state.er_pred:.2f}%",
+            )
+
+        if st.session_state.clip_result is not None:
+            render_clip_message(st.session_state.clip_result)
+
+        recommend_clicked = st.button(
+            "Получить рекомендации",
+            use_container_width=True,
+        )
+
+        if recommend_clicked:
             try:
-                error_detail = e.response.json().get("detail", "Ошибка при обработке запроса.")
-            except Exception:
-                error_detail = "Ошибка при обработке запроса."
-            st.error(error_detail)
-        except Exception as e:
-            st.error(f"Произошла непредвиденная ошибка: {e}")
+                with st.spinner("Готовлю рекомендации..."):
+                    payload = st.session_state.last_payload
+
+                    recommendations = call_recommendations(
+                        text=payload["text"],
+                        domain=payload["domain"],
+                        dt_msk=payload["dt_msk"],
+                        n_photos=payload["n_photos"],
+                    )
+
+                st.session_state.recommendations = recommendations
+                st.session_state.improved_text = None
+                st.session_state.improvement_message = None
+
+                try:
+                    with st.spinner("Пробую улучшить текст..."):
+                        improved_result = call_text_improvement(
+                            text=payload["text"],
+                            domain=payload["domain"],
+                            recommendations=recommendations,
+                        )
+
+                    if improved_result.get("available"):
+                        st.session_state.improved_text = improved_result.get("improved_text")
+                        st.session_state.improvement_message = None
+                    else:
+                        st.session_state.improved_text = None
+                        st.session_state.improvement_message = improved_result.get(
+                            "message",
+                            "Автоматическое улучшение текста сейчас недоступно.",
+                        )
+
+                except Exception:
+                    st.session_state.improved_text = None
+                    st.session_state.improvement_message = (
+                        "Не удалось автоматически улучшить текст, "
+                        "но рекомендации были успешно получены."
+                    )
+
+            except Exception as e:
+                handle_request_error(e)
+
+    if st.session_state.recommendations is not None:
+        render_recommendations(st.session_state.recommendations)
+
+    if st.session_state.improvement_message is not None:
+        st.info(st.session_state.improvement_message)
+
+    if st.session_state.improved_text is not None:
+        st.subheader("Улучшенный текст")
+        st.text_area(
+            "Версия после редактирования",
+            value=st.session_state.improved_text,
+            height=250,
+        )
 
 
 if __name__ == "__main__":

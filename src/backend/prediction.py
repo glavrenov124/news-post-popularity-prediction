@@ -1,45 +1,10 @@
-from pathlib import Path
-
-import holidays
-import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
 
 from src.ml.embeddings.rubert import RuBertEmbedder
 from src.ml.features.build_features import make_features
-
-
-def get_is_holiday(dt_msk: str) -> int:
-    dt = pd.to_datetime(dt_msk, errors="coerce")
-    if pd.isna(dt):
-        return 0
-
-    ru_holidays = holidays.Russia(years=[dt.year])
-    return int(dt.date() in ru_holidays)
-
-
-def build_single_row_dataframe(
-    text: str,
-    domain: str,
-    dt_msk: str,
-    n_photos: int,
-) -> pd.DataFrame:
-    is_holiday = get_is_holiday(dt_msk)
-
-    df = pd.DataFrame(
-        [
-            {
-                "text": text,
-                "domain": domain,
-                "dt_msk": dt_msk,
-                "n_photos": n_photos,
-                "is_pinned": 0,
-                "is_holiday": is_holiday,
-                "row_id": 0,
-            }
-        ]
-    )
-    return df
+from src.utils.dataframes import build_single_row_dataframe
+from src.utils.dates import get_is_holiday
 
 
 def build_single_text_embedding(
@@ -96,6 +61,7 @@ def predict_single_post(
         domain=domain,
         dt_msk=dt_msk,
         n_photos=n_photos,
+        is_holiday=get_is_holiday(dt_msk),
     )
 
     df = make_features(df)
@@ -110,6 +76,6 @@ def predict_single_post(
     emb_cols = [col for col in df.columns if col.startswith("emb_")]
     feature_cols = config.features.num_cols + config.features.cat_cols + emb_cols
     df = df[feature_cols].copy()
-    
+
     y_pred = model.predict(df)[0]
     return postprocess_prediction(target_name, y_pred, config)

@@ -25,6 +25,20 @@ class ClipScoreResponse(BaseModel):
     message: str
 
 
+class RecommendationsRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Текст поста")
+    domain: str = Field(default="unknown", description="Сообщество / домен")
+    dt_msk: str = Field(
+        ...,
+        description="Дата и время публикации в формате YYYY-MM-DD HH:MM:SS",
+    )
+    n_photos: int = Field(default=1, ge=0)
+
+
+class RecommendationsResponse(BaseModel):
+    recommendations: list[str]
+
+
 class ImproveTextRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Текст поста")
     domain: str = Field(default="unknown", description="Сообщество / домен")
@@ -35,5 +49,7 @@ class ImproveTextRequest(BaseModel):
 
 
 class ImproveTextResponse(BaseModel):
-    improved_text: str
-    used_prompt: str
+    available: bool
+    improved_text: str | None = None
+    used_prompt: str | None = None
+    message: str | None = None
