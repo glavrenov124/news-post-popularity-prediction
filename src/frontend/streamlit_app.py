@@ -5,7 +5,6 @@ import os
 import requests
 import streamlit as st
 
-
 st.set_page_config(page_title="News Post Popularity", layout="centered")
 
 
@@ -170,7 +169,7 @@ def render_image_gallery() -> int:
     st.write(f"Прикреплено фото: {len(images)}")
 
     for start_idx in range(0, len(images), 3):
-        row = images[start_idx:start_idx + 3]
+        row = images[start_idx : start_idx + 3]
         cols = st.columns(3)
 
         for col, image_data in zip(cols, row):
@@ -438,7 +437,9 @@ def main():
                         )
 
                     if improved_result.get("available"):
-                        st.session_state.improved_text = improved_result.get("improved_text")
+                        st.session_state.improved_text = improved_result.get(
+                            "improved_text"
+                        )
                         st.session_state.improvement_message = None
                     else:
                         st.session_state.improved_text = None

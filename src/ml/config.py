@@ -197,7 +197,10 @@ def create_config(project_root: str | Path) -> AppConfig:
     paths = PathsConfig(
         project_root=project_root,
         raw_data_path=project_root / "data" / "raw" / "posts_vk.csv",
-        prepared_data_path=project_root / "artifacts" / "data" / "prepared_features.csv",
+        prepared_data_path=project_root
+        / "artifacts"
+        / "data"
+        / "prepared_features.csv",
         embeddings_path=project_root / "artifacts" / "data" / "embeddings.csv",
         models_dir=project_root / "artifacts" / "models",
         mlruns_dir=project_root / "mlruns",

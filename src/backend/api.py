@@ -15,7 +15,6 @@ from src.ml.embeddings.clip import load_clip_models
 from src.ml.embeddings.rubert import RuBertEmbedder
 from src.utils.recommendation_rules import load_feature_thresholds_by_domain
 
-
 setup_logging()
 logger = logging.getLogger(__name__)
 

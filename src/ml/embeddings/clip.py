@@ -5,7 +5,6 @@ import torch
 from PIL import Image
 from sentence_transformers import SentenceTransformer, util
 
-
 TEXT_MODEL_NAME = "sentence-transformers/clip-ViT-B-32-multilingual-v1"
 IMAGE_MODEL_NAME = "sentence-transformers/clip-ViT-B-32"
 

@@ -1,6 +1,5 @@
 import openai
 
-
 BASE_INSTRUCTIONS = (
     "Ты редактор русскоязычных постов для соцсетей. "
     "Исправляй орфографию, пунктуацию, грамматику и стилистику. "
@@ -33,9 +32,7 @@ def build_llm_input(text: str, recommendations: list[str]) -> str:
             f"Текст поста:\n{text}"
         )
 
-    recommendations_text = "\n".join(
-        f"- {rec}" for rec in filtered_recommendations
-    )
+    recommendations_text = "\n".join(f"- {rec}" for rec in filtered_recommendations)
 
     return (
         "Отредактируй текст поста с учётом рекомендаций ниже. "

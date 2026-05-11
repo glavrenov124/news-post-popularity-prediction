@@ -5,7 +5,6 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 
-
 MODEL_NAME = "cointegrated/rubert-tiny2"
 
 
@@ -30,8 +29,12 @@ class RuBertEmbedder:
 
     def mean_pooling(self, model_output, attention_mask):
         token_embeddings = model_output.last_hidden_state
-        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-        return (token_embeddings * input_mask_expanded).sum(1) / input_mask_expanded.sum(1).clamp(min=1e-9)
+        input_mask_expanded = (
+            attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        )
+        return (token_embeddings * input_mask_expanded).sum(
+            1
+        ) / input_mask_expanded.sum(1).clamp(min=1e-9)
 
     @torch.no_grad()
     def encode_texts(
@@ -43,7 +46,7 @@ class RuBertEmbedder:
         all_embeddings = []
 
         for i in tqdm(range(0, len(texts), batch_size)):
-            batch_texts = texts[i:i + batch_size]
+            batch_texts = texts[i : i + batch_size]
 
             encoded = self.tokenizer(
                 batch_texts,

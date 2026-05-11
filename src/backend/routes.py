@@ -18,7 +18,6 @@ from src.backend.schemas import (
 from src.backend.text_improvement import improve_text_with_llm
 from src.ml.embeddings.clip import compute_clip_score, interpret_clip_score
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
