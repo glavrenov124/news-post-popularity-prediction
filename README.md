@@ -62,7 +62,7 @@ cd news-post-popularity-prediction
 ```bash
 poetry install --no-root
 ```
-### 3. Загрузка датасет
+### 3. Загрузка датасета
 ```bash
 poetry run python scripts/download_data.py
 ```
