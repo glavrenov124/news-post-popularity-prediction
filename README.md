@@ -48,3 +48,14 @@ src/
 artifacts/ (папка появляется после предобработки данных)
   models/      # обученные модели
   data/        # подготовленные данные
+
+##Запуск проекта
+### 1. Клонирование репозитория
+```bash
+git clone https://github.com/glavrenov124/news-post-popularity-prediction
+cd news-post-popularity-prediction
+```
+### 2. Установка зависимостей
+```bash
+poetry install
+```
