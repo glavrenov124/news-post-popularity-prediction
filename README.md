@@ -83,5 +83,6 @@ YANDEX_CLOUD_FOLDER=...
 YANDEX_CLOUD_API_KEY=...
 YANDEX_CLOUD_MODEL="deepseek-v32/latest"
 
+Если переменные не заданы, функция улучшения не будет работать.
 
 ```
