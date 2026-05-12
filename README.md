@@ -48,8 +48,9 @@ src/
 artifacts/ (папка появляется после предобработки данных)
   models/      # обученные модели
   data/        # подготовленные данные
-
+```
 ##Запуск проекта
+
 ### 1. Клонирование репозитория
 ```bash
 git clone https://github.com/glavrenov124/news-post-popularity-prediction
