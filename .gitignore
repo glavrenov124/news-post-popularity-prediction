@@ -16,5 +16,4 @@ data/interim/
 
 models/
 artifacts/
-notebooks/
 .pytest_cache/
