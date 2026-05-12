@@ -86,13 +86,12 @@ YANDEX_CLOUD_MODEL="deepseek-v32/latest"
 Если переменные не заданы, функция улучшения не будет работать.
 ```
 ### 7. Запуск Backend и Frontend локально
-```text
 Для корректной работы backend необходимы:
-- обученные модели в artifacts/models;
+- обученные модели в artifacts/models
 - artifacts/data/prepared_features.csv
-
+  
 Запуск команд осуществляется в разных терминалах
-```
+
 ```bash
 poetry run uvicorn src.backend.api:app --reload
 poetry run streamlit run src/frontend/streamlit_app.py
