@@ -58,5 +58,30 @@ cd news-post-popularity-prediction
 ```
 ### 2. Установка зависимостей
 ```bash
-poetry install
+poetry install --no-root
+```
+## 3. Загрузка датасет
+```bash
+poetry run python scripts/download_data.py
+```
+## 4. Подготовка данных и эмбеддингов текста
+```bash
+poetry run python -m src.ml.main prepare-data
+poetry run python -m src.ml.main prepare-embeddings
+```
+## 5.Обучение моделей
+
+```bash
+poetry run python -m src.ml.main train --target views
+poetry run python -m src.ml.main train --target engagement_rate
+```
+### Создание файла .env
+```text
+Для использования функции автоматического улучшения текста через LLM необходимо создать файл .env и указать:
+
+YANDEX_CLOUD_FOLDER=...
+YANDEX_CLOUD_API_KEY=...
+YANDEX_CLOUD_MODEL="deepseek-v32/latest"
+
+
 ```
