@@ -85,3 +85,9 @@ YANDEX_CLOUD_MODEL="deepseek-v32/latest"
 
 Если переменные не заданы, функция улучшения не будет работать.
 ```
+### 7 Запуск Backend локально
+```text
+Для корректной работы backend необходимы:
+- обученные модели в artifacts/models;
+- artifacts/data/prepared_features.csv.
+```
