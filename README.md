@@ -75,7 +75,11 @@ poetry run python -m src.ml.main prepare-embeddings
 poetry run python -m src.ml.main train --target views
 poetry run python -m src.ml.main train --target engagement_rate
 ```
-### 6. Создание файла .env
+### 6. Запуск mlflow
+```bash
+poetry run mlflow ui
+```
+### 7. Создание файла .env
 ```text
 Для использования функции автоматического улучшения текста через LLM необходимо создать файл .env и указать:
 
@@ -85,7 +89,7 @@ YANDEX_CLOUD_MODEL="deepseek-v32/latest"
 
 Если переменные не заданы, функция улучшения не будет работать.
 ```
-### 7. Запуск Backend и Frontend локально
+### 8. Запуск Backend и Frontend локально
 Для корректной работы backend необходимы:
 - обученные модели в artifacts/models
 - artifacts/data/prepared_features.csv
@@ -97,7 +101,7 @@ poetry run uvicorn src.backend.api:app --reload
 poetry run streamlit run src/frontend/streamlit_app.py
 ```
 
-### 8. Запуск через docker
+### 9. Запуск через docker
 
 ```bash
 docker compose up --build
